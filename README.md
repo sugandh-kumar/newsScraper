@@ -1,248 +1,211 @@
 # News Scraper Search Engine
 
-This project scraps the articles data from https://www.thehindu.com/archive/ and stores them in a json file. The scraped data is then sent to Solr server for indexing. There is a Spring Boot Application containing APIs to perform search on the indexed data. 
+This project scrapes article data from [The Hindu archive](https://www.thehindu.com/archive/) and stores it in a JSON file. The scraped data is indexed in Apache Solr. A Spring Boot application exposes REST APIs to search the indexed articles.
+
+## Tech Stack
+
+| Component | Version |
+|-----------|---------|
+| Scrapy (Python) | 2.x |
+| Apache Solr | 10.x recommended (originally built with **Solr 7.6**) |
+| Spring Boot | 3.4.4 |
+| Java | 21 |
+| Build tool | Gradle |
+| SolrJ | 9.7.0 |
+
+> **Note:** The Solr core configuration in `solrCore/conf/` was written for Solr 7.6. It works with newer Solr versions for this project's basic search use case, but you may need to adjust `managed-schema` or `solrconfig.xml` if you hit compatibility warnings when running Solr 10.
 
 ## Getting Started
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
 ### Prerequisites
-What things you need to install the software and how to install them
 
 #### Scraping
-Data Scraping is done with Scrapy, which is a Python based crawling framework, used to extract the data from the web page with the help of selectors based on XPath.
 
-To install Python, follow - https://www.python.org/downloads/
+Data scraping uses [Scrapy](https://scrapy.org/), a Python crawling framework that extracts data from web pages using XPath/CSS selectors.
 
-To install scrapy after installing Python, use -
+Install Python from https://www.python.org/downloads/
 
-```
+Then install Scrapy:
+
+```bash
 pip install scrapy
 ```
 
-Once scraping is done, the scraped data is stored in a json file. This scraped data is sent to Solr using Pysolr.
-To isntall Pysolr, use -
-```
+After scraping, data is stored in a JSON file. To load that data into Solr, use [pysolr](https://pypi.org/project/pysolr/):
+
+```bash
 pip install pysolr
 ```
 
-### Searching
-Seaching is done using Solr Search Engine. Solr is a scalable, ready to deploy, search/storage engine optimized to search large volumes of text-centric data. Solr is enterprise-ready, fast and highly scalable. 
-To install Solr, follow - http://lucene.apache.org/solr/
-Once installed, start the server by running the following command in bin folder of solr -
+#### Searching (Solr)
 
-```
-./solr start
-```
+Search is powered by [Apache Solr](https://solr.apache.org/). Install Solr 10 from https://solr.apache.org/downloads.html
 
-create a Solr Core, named articles using -
+Start the server from the Solr install directory:
 
-```
-./solr create_core -c articles
+```bash
+bin/solr start
 ```
 
-Copy and replace the folder conf inside solrCore to the following folder - solr-7.6.0/server/solr/articles/
+Create a Solr core named `articles`:
 
-OR
-
-Replace the managed-schema and solrconfig.xml files inside solr-7.6.0/server/solr/articles/conf/ with the managed-schema and solrconfig.xml files in the solrCore/conf folder of the repository.
-
-### API
-The Spring Boot Appplication is named NewsScraperSearch, to run this application,
-Java (https://www.oracle.com/technetwork/java/javase/downloads/index.html) and 
-Maven (https://maven.apache.org/download.cgi) 
-is needed, which can be installed by following the mentioned links.
-
-## Running the tests
-To start the scraper, open a terminal/cmd in the newsScraper folder(which contains scrapy.cfg file) and run -
+```bash
+# Solr 10+ (create_core was removed in Solr 10)
+bin/solr create -c articles
 ```
+
+<details>
+<summary>Solr 7.6 (legacy — original project version)</summary>
+
+If you are running the original Solr 7.6 setup:
+
+```bash
+bin/solr create_core -c articles
+```
+
+The core config path will be under `server/solr/articles/conf/` (e.g. `solr-7.6.0/server/solr/articles/conf/`).
+
+</details>
+
+Apply the project schema and config. From your Solr install directory, either:
+
+**Option A** — replace the entire `conf` folder:
+
+```bash
+cp -r /path/to/newsScraper/solrCore/conf server/solr/articles/
+```
+
+**Option B** — replace individual files:
+
+```bash
+cp /path/to/newsScraper/solrCore/conf/managed-schema server/solr/articles/conf/
+cp /path/to/newsScraper/solrCore/conf/solrconfig.xml server/solr/articles/conf/
+```
+
+Restart Solr after updating the config:
+
+```bash
+bin/solr restart
+```
+
+#### API (Spring Boot)
+
+The Spring Boot application lives in `NewsScraperSearch/`.
+
+- **Java 21** — https://www.oracle.com/java/technologies/downloads/
+- **Gradle** — not required; the project includes the Gradle Wrapper (`gradlew`)
+
+## Running the Pipeline
+
+### 1. Scrape articles
+
+Open a terminal in the `newsScraper/` folder (the one containing `scrapy.cfg`) and run:
+
+```bash
 scrapy crawl thehindubot -o items.json -t json
 ```
-The scraper create a items.json file at the same location. The json file contains a list of following object -
 
-```
+This creates `items.json` with entries like:
+
+```json
 {
-    "url": "https://www.thehindu.com/sport/other-sports/kore-stuns-deepan-in-joint-lead/article2790567.ece",
-    "title": "Kore stuns Deepan, in joint lead",
-    "description": "IM Akshayraj Kore shocked GM Deepan Chakkravarthy to join the leaders at the end of the ninth round in the SDAT-RMK Chennai Open international Grandmaster chess tournament here on Tuesday.",
-    "author": "Arvind Aaron"
-  }
+  "url": "https://www.thehindu.com/sport/other-sports/kore-stuns-deepan-in-joint-lead/article2790567.ece",
+  "title": "Kore stuns Deepan, in joint lead",
+  "description": "IM Akshayraj Kore shocked GM Deepan Chakkravarthy to join the leaders at the end of the ninth round in the SDAT-RMK Chennai Open international Grandmaster chess tournament here on Tuesday.",
+  "author": "Arvind Aaron"
+}
 ```
 
-To send the scraped data to Solr server, run the following in the same terminal/cmd -
+### 2. Index data into Solr
 
-```
-python inject.py items.json http://{Solr Server IP}:8983/solr/articles
-```
-Replace {Solr server ip} in the above command with the ip address of the Solr server
+From the same `newsScraper/` folder:
 
-If the Solr server and the Application Server are on different machines, then the following property needs to be changed in the application.properties file, located in  NewsScraperSearch/src/main/resources/application.properties - 
-
-```
-solr.server.articles.url
+```bash
+python inject.py items.json http://localhost:8983/solr/articles
 ```
 
-Once data is impoerted successfully in Solr, restart Solr server with the following command -
+Replace the host if Solr is running on a different machine.
 
+If Solr and the Spring Boot app run on different hosts, update `solr.server.articles.url` in `NewsScraperSearch/src/main/resources/application.properties`.
+
+### 3. Start the API server
+
+From the `NewsScraperSearch/` folder:
+
+```bash
+./gradlew clean build
+java -jar build/libs/NewsScraper-0.0.1-SNAPSHOT.jar
 ```
-./solr restart
+
+Or run without building a jar:
+
+```bash
+./gradlew bootRun
 ```
 
-To start the Application Server, go to the NewsScraperSearch folder, open a terminal/cmd and run the following -
+The server starts on port **8081** with context path `/newsScraper`.
 
-```
-mvn clean install
-cd target/
-java -jar NewsScraper-0.0.1-SNAPSHOT.jar
-```
-
-Once the server is started, following APIs can be used for testing:
-
-
-Explain how to run the automated tests for this system
+## API Reference
 
 ### Author Search
-This API searches the list of authors on the basis of suppplied search query
-API Endpoint - {server IP}:8081/newsScraper/author/search?author=searchQuery
-Method - GET
-Sample Request - http://localhost:8081/newsScraper/author/search?author=ap
-Sample Response -
 
-```
+Searches for author names matching the query.
+
+- **Endpoint:** `GET /newsScraper/author/search?author={query}`
+- **Sample:** http://localhost:8081/newsScraper/author/search?author=ap
+
+```json
 {
-    "authors": [
-        {
-            "author": "AP"
-        },
-        {
-            "author": "Rajulapudi Srinivas"
-        },
-        {
-            "author": "Vijay Lokapally"
-        }
-    ]
+  "authors": [
+    { "author": "AP" },
+    { "author": "Rajulapudi Srinivas" },
+    { "author": "Vijay Lokapally" }
+  ]
 }
 ```
 
-author parameter is a mandatory field
+The `author` parameter is required.
 
 ### Article Search
-This API searches articles in Solr on the basis of supplied search parameter.
-Method - GET
-There are 3 search parameters -
-author
-title
-description
-Exactly one of these parameter is required in the request
-#### Search Based on Author Name
-API Endpoint - {server IP}:8081/newsScraper/article/search?author=searchQuery
-Sample Request - http://localhost:8081/newsScraper/article/search?author=ap
-Sampel Response -
 
-```
+Searches indexed articles in Solr. Exactly **one** of `author`, `title`, or `description` is required.
+
+- **Method:** GET
+
+#### By author
+
+- **Endpoint:** `GET /newsScraper/article/search?author={query}`
+- **Sample:** http://localhost:8081/newsScraper/article/search?author=ap
+
+#### By title or description
+
+- **Endpoints:**
+  - `GET /newsScraper/article/search?title={query}`
+  - `GET /newsScraper/article/search?description={query}`
+- **Samples:**
+  - http://localhost:8081/newsScraper/article/search?title=Bomb
+  - http://localhost:8081/newsScraper/article/search?description=exploded
+
+```json
 {
-    "articles": [
-        {
-            "url": "https://www.thehindu.com/news/international/bomb-kills-20-in-northwest-pakistan/article2789825.ece",
-            "title": "Bomb kills 20 in northwest Pakistan",
-            "author": "AP",
-            "description": "A bomb exploded close to a bus in northwest Pakistan on Tuesday, killing 20 people in the deadliest blast in the country in several months, a government official said."
-        },
-        {
-            "url": "https://www.thehindu.com/news/international/us-womans-quest-could-mean-medal-of-honour-for-dad/article2790546.ece",
-            "title": "U.S. woman's quest could mean Medal of Honour for dad",
-            "author": "AP",
-            "description": "It was bravery at the highest level- William Shemin defied German machine gun fire to sprint across a World War I battlefield and pull wounded comrades to safety. And he did so no fewer than three times."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/football/platini-messi-needs-world-cup-to-be-the-greatest/article2790121.ece",
-            "title": "Platini: Messi needs World Cup to be the greatest",
-            "author": "AP",
-            "description": "Michel Platini said Lionel Messi must win a World Cup with Argentina before he can be considered a contender as the greatest player of all time."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/football/fifa-pledges-to-protect-matchfixing-witnesses/article2790380.ece",
-            "title": "FIFA pledges to protect match-fixing witnesses",
-            "author": "AP",
-            "description": "FIFA has pledged to protect witnesses who report match-fixing plots by organised crime syndicates."
-        },
-        {
-            "url": "https://www.thehindu.com/opinion/op-ed/fake-bomb-smuggled-into-olympic-site/article2788319.ece",
-            "title": "Fake bomb smuggled into Olympic site",
-            "author": "AP",
-            "description": "U.K. police managed to smuggle a fake bomb into Olympic Park in a security test, overshadowing a special Cabinet meeting on Monday at the park that marked 200 days until the Summer Games begin."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/cricket/bangladesh-cricket-ceo-passes-away/article2790500.ece",
-            "title": "Bangladesh cricket CEO passes away",
-            "author": "AP",
-            "description": "The Bangladesh Cricket Board said chief executive officer Manzur Ahmed has died of a heart attack while asleep in his Dhaka apartment. He was 57."
-        },
-        {
-            "url": "https://www.thehindu.com/sci-tech/technology/gadgets/latest-from-lg-tvs-you-can-talk-to-without-sounding-crazy/article2790225.ece",
-            "title": "Latest from LG - TVs you can talk to, without sounding crazy",
-            "author": "AP",
-            "description": "Talking to the TV is usually a sign of extreme agitation, mental instability or loneliness. LG Electronics is set to make it a more rational behaviour this year, with a range of TVs that respond to speech."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/tennis/venus-williams-pulls-out-of-australian-open/article2789930.ece",
-            "title": "Venus Williams pulls out of Australian Open",
-            "author": "AP",
-            "description": "Venus Williams has withdrawn from the Australian Open, prolonging her absence from the tennis tour because of an autoimmune disease that can cause fatigue and joint pain."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/tennis/wozniacki-kvitova-into-sydney-quarters/article2790114.ece",
-            "title": "Wozniacki, Kvitova into Sydney quarters",
-            "author": "AP",
-            "description": "Top-ranked Caroline Wozniacki came back from 4-0 down in the final set to beat Dominika Cibulkova of Slovakia 7-5, 2-6, 6-4 on Tuesday and advance to the quarterfinals at the Sydney International."
-        },
-        {
-            "url": "https://www.thehindu.com/news/cities/Vijayawada/cockfight-activity-begins-in-villages/article2789763.ece",
-            "title": "Cockfight activity begins in villages",
-            "author": "Rajulapudi Srinivas",
-            "description": "Even as police has begun raids to prevent ‘cockfights', the activity has started in many villages ahead of ‘Sankranti' festival."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/cricket/keen-contest-on-the-cards/article2787841.ece",
-            "title": "Keen contest on the cards",
-            "author": "Vijay Lokapally",
-            "description": "Rural face of Indian cricket; so be it! The Haryanvi cricketer is proud of playing for the State. Three quarterfinal spots in the last three years and the Ranji Trophy semifinal clash with Rajasthan at the Chaudhary Bansi Lal Stadium here from Tuesday places Haryana among the elite teams of domestic circuit."
-        },
-        {
-            "url": "https://www.thehindu.com/sport/cricket/wickets-fall-like-nine-pins-harshal-wrecks-havoc/article2790582.ece",
-            "title": "Wickets fall like nine pins; Harshal wrecks havoc",
-            "author": "Vijay Lokapally",
-            "description": "Rajasthan 89. Haryana 82 for eight. Not a T20 contest but just a day-old Ranji Trophy semifinal on a lively pitch that tested the character and discipline of a batsman."
-        }
-    ]
+  "articles": [
+    {
+      "url": "https://www.thehindu.com/news/international/bomb-kills-20-in-northwest-pakistan/article2789825.ece",
+      "title": "Bomb kills 20 in northwest Pakistan",
+      "author": "AP",
+      "description": "A bomb exploded close to a bus in northwest Pakistan on Tuesday, killing 20 people in the deadliest blast in the country in several months, a government official said."
+    },
+    {
+      "url": "https://www.thehindu.com/opinion/op-ed/fake-bomb-smuggled-into-olympic-site/article2788319.ece",
+      "title": "Fake bomb smuggled into Olympic site",
+      "author": "AP",
+      "description": "U.K. police managed to smuggle a fake bomb into Olympic Park in a security test, overshadowing a special Cabinet meeting on Monday at the park that marked 200 days until the Summer Games begin."
+    }
+  ]
 }
 ```
 
-#### Search Based on Article Title or Description
-API Endpoint - {server IP}:8081/newsScraper/article/search?title=searchQuery,
-{server IP}:8081/newsScraper/article/search?description=searchQuery
-Sample Request - http://localhost:8081/newsScraper/article/search?title=Bomb,
-localhost:8081/newsScraper/article/search?description=exploded
-Sample Response -
-
-```
-{
-    "articles": [
-        {
-            "url": "https://www.thehindu.com/news/international/bomb-kills-20-in-northwest-pakistan/article2789825.ece",
-            "title": "Bomb kills 20 in northwest Pakistan",
-            "author": "AP",
-            "description": "A bomb exploded close to a bus in northwest Pakistan on Tuesday, killing 20 people in the deadliest blast in the country in several months, a government official said."
-        },
-        {
-            "url": "https://www.thehindu.com/opinion/op-ed/fake-bomb-smuggled-into-olympic-site/article2788319.ece",
-            "title": "Fake bomb smuggled into Olympic site",
-            "author": "AP",
-            "description": "U.K. police managed to smuggle a fake bomb into Olympic Park in a security test, overshadowing a special Cabinet meeting on Monday at the park that marked 200 days until the Summer Games begin."
-        }
-    ]
-}
-```
-
+Optional pagination: `pageNumber` (0-based, 30 results per page).
 
 ## Authors
 
@@ -251,4 +214,3 @@ Sample Response -
 ## Acknowledgments
 
 * Hat tip to anyone whose code was used
-

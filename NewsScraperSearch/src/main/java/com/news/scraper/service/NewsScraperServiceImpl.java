@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,17 +43,17 @@ public class NewsScraperServiceImpl implements NewsScraperService {
 		if (pageNumber == null || pageNumber < 0l) {
 			pageNumber = 0l;
 		}
-		HttpSolrClient solrClient = new HttpSolrClient.Builder(articlesUrl).build();
+		HttpJdkSolrClient solrClient = new HttpJdkSolrClient.Builder(articlesUrl).build();
 		SolrQuery query = null;
-		if (!StringUtils.isEmpty(author)) {
+		if (StringUtils.hasText(author)) {
 			author = getSearchString(author);
 			query = queryBuilder.buildArticleQuery(String.format(SearchConstants.AUTHOR_QUERY_STRING, author, author),
 					pageNumber);
-		} else if (!StringUtils.isEmpty(title)) {
+		} else if (StringUtils.hasText(title)) {
 			title = getSearchString(title);
 			query = queryBuilder.buildArticleQuery(String.format(SearchConstants.TITLE_QUERY_STRING, title, title),
 					pageNumber);
-		} else if (!StringUtils.isEmpty(description)) {
+		} else if (StringUtils.hasText(description)) {
 			description = getSearchString(description);
 			query = queryBuilder.buildArticleQuery(
 					String.format(SearchConstants.DESCRIPTION_QUERY_STRING, description, description), pageNumber);
@@ -78,9 +78,9 @@ public class NewsScraperServiceImpl implements NewsScraperService {
 		if (pageNumber == null || pageNumber < 0l) {
 			pageNumber = 0l;
 		}
-		HttpSolrClient solrClient = new HttpSolrClient.Builder(articlesUrl).build();
+		HttpJdkSolrClient solrClient = new HttpJdkSolrClient.Builder(articlesUrl).build();
 		SolrQuery query = null;
-		if (!StringUtils.isEmpty(author)) {
+		if (StringUtils.hasText(author)) {
 			author = getSearchString(author);
 			query = queryBuilder.buildArticleQuery(String.format(SearchConstants.AUTHOR_QUERY_STRING, author, author),
 					pageNumber);
