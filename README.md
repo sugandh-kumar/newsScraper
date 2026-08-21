@@ -7,13 +7,13 @@ This project scrapes article data from [The Hindu archive](https://www.thehindu.
 | Component | Version |
 |-----------|---------|
 | Scrapy (Python) | 2.x |
-| Apache Solr | 10.x recommended (originally built with **Solr 7.6**) |
+| Apache Solr | 9.10.1 |
 | Spring Boot | 3.4.4 |
 | Java | 21 |
 | Build tool | Gradle |
 | SolrJ | 9.7.0 |
 
-> **Note:** The Solr core configuration in `solrCore/conf/` was written for Solr 7.6. It works with newer Solr versions for this project's basic search use case, but you may need to adjust `managed-schema` or `solrconfig.xml` if you hit compatibility warnings when running Solr 10.
+> **Note:** The configuration in `solrCore/conf/` has been updated for Solr 9.10.1. The schema defines the `url`, `title`, `description`, and `author` fields used by the application.
 
 ## Getting Started
 
@@ -39,7 +39,7 @@ pip install pysolr
 
 #### Searching (Solr)
 
-Search is powered by [Apache Solr](https://solr.apache.org/). Install Solr 10 from https://solr.apache.org/downloads.html
+Search is powered by [Apache Solr](https://solr.apache.org/). Install Solr 9.10.1 from https://solr.apache.org/downloads.html
 
 Start the server from the Solr install directory:
 
@@ -50,35 +50,14 @@ bin/solr start
 Create a Solr core named `articles`:
 
 ```bash
-# Solr 10+ (create_core was removed in Solr 10)
+# Solr 9
 bin/solr create -c articles
 ```
 
-<details>
-<summary>Solr 7.6 (legacy — original project version)</summary>
-
-If you are running the original Solr 7.6 setup:
+Apply the project schema and config by replacing the individual files. From your Solr install directory:
 
 ```bash
-bin/solr create_core -c articles
-```
-
-The core config path will be under `server/solr/articles/conf/` (e.g. `solr-7.6.0/server/solr/articles/conf/`).
-
-</details>
-
-Apply the project schema and config. From your Solr install directory, either:
-
-**Option A** — replace the entire `conf` folder:
-
-```bash
-cp -r /path/to/newsScraper/solrCore/conf server/solr/articles/
-```
-
-**Option B** — replace individual files:
-
-```bash
-cp /path/to/newsScraper/solrCore/conf/managed-schema server/solr/articles/conf/
+cp /path/to/newsScraper/solrCore/conf/managed-schema.xml server/solr/articles/conf/
 cp /path/to/newsScraper/solrCore/conf/solrconfig.xml server/solr/articles/conf/
 ```
 
@@ -122,6 +101,14 @@ From the same `newsScraper/` folder:
 
 ```bash
 python inject.py items.json http://localhost:8983/solr/articles
+```
+
+The importer sends the documents but does not commit them. Commit the batch before searching:
+
+```bash
+curl -X POST 'http://localhost:8983/solr/articles/update?commit=true' \
+  -H 'Content-Type: application/json' \
+  --data-binary '[]'
 ```
 
 Replace the host if Solr is running on a different machine.
