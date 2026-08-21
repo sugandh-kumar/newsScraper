@@ -26,3 +26,5 @@ bin
 /nbdist/
 /.nb-gradle/
 /build/
+NewsScraperSearch/APPS_LOGS/*/*.zip
+.vscode/*
