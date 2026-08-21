@@ -5,7 +5,7 @@ This project scrapes article data from [The Hindu archive](https://www.thehindu.
 ## Tech Stack
 
 | Component | Version |
-|-----------|---------|
+| ----------- | --------- |
 | Scrapy (Python) | 2.x |
 | Apache Solr | 9.10.1 |
 | Spring Boot | 3.4.4 |
@@ -23,7 +23,7 @@ This project scrapes article data from [The Hindu archive](https://www.thehindu.
 
 Data scraping uses [Scrapy](https://scrapy.org/), a Python crawling framework that extracts data from web pages using XPath/CSS selectors.
 
-Install Python from https://www.python.org/downloads/
+Install Python from <https://www.python.org/downloads/>
 
 Then install Scrapy:
 
@@ -39,7 +39,7 @@ pip install pysolr
 
 #### Searching (Solr)
 
-Search is powered by [Apache Solr](https://solr.apache.org/). Install Solr 9.10.1 from https://solr.apache.org/downloads.html
+Search is powered by [Apache Solr](https://solr.apache.org/). Install Solr 9.10.1 from <https://solr.apache.org/downloads.html>
 
 Start the server from the Solr install directory:
 
@@ -71,7 +71,7 @@ bin/solr restart
 
 The Spring Boot application lives in `NewsScraperSearch/`.
 
-- **Java 21** — https://www.oracle.com/java/technologies/downloads/
+- **Java 21** — <https://www.oracle.com/java/technologies/downloads/>
 - **Gradle** — not required; the project includes the Gradle Wrapper (`gradlew`)
 
 ## Running the Pipeline
@@ -139,7 +139,7 @@ The server starts on port **8081** with context path `/newsScraper`.
 Searches for author names matching the query.
 
 - **Endpoint:** `GET /newsScraper/author/search?author={query}`
-- **Sample:** http://localhost:8081/newsScraper/author/search?author=ap
+- **Sample:** <http://localhost:8081/newsScraper/author/search?author=ap>
 
 ```json
 {
@@ -162,7 +162,7 @@ Searches indexed articles in Solr. Exactly **one** of `author`, `title`, or `des
 #### By author
 
 - **Endpoint:** `GET /newsScraper/article/search?author={query}`
-- **Sample:** http://localhost:8081/newsScraper/article/search?author=ap
+- **Sample:** <http://localhost:8081/newsScraper/article/search?author=ap>
 
 #### By title or description
 
@@ -170,8 +170,8 @@ Searches indexed articles in Solr. Exactly **one** of `author`, `title`, or `des
   - `GET /newsScraper/article/search?title={query}`
   - `GET /newsScraper/article/search?description={query}`
 - **Samples:**
-  - http://localhost:8081/newsScraper/article/search?title=Bomb
-  - http://localhost:8081/newsScraper/article/search?description=exploded
+  - <http://localhost:8081/newsScraper/article/search?title=Bomb>
+  - <http://localhost:8081/newsScraper/article/search?description=exploded>
 
 ```json
 {
@@ -196,8 +196,8 @@ Optional pagination: `pageNumber` (0-based, 30 results per page).
 
 ## Authors
 
-* **Sugandh Chaudhary**
+- **Sugandh Chaudhary**
 
 ## Acknowledgments
 
-* Hat tip to anyone whose code was used
+- Hat tip to anyone whose code was used
