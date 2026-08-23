@@ -1,12 +1,11 @@
 package com.news.scraper.service;
 
-import org.springframework.http.ResponseEntity;
+import java.util.Map;
 
-@SuppressWarnings("rawtypes")
 public interface NewsScraperService {
 	
-	public ResponseEntity searchArticle(String author, String title, String description, Long pageNumber);
+	Map<String, Object> searchArticle(String author, String title, String description, Long pageNumber);
 	
-	public ResponseEntity searchAuthor(String author, Long pageNumber);
+	Map<String, Object> searchAuthor(String author, Long pageNumber);
 
 }
