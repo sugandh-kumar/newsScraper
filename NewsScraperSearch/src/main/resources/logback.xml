@@ -8,7 +8,7 @@
 <!-- http://www.qos.ch/shop/products/professionalSupport  -->
 <!-- -->
 <configuration>
-	<property name="LOG_PATH" value="APPS_LOGS/SolrSearch" />
+	<property name="LOG_PATH" value="APPS_LOGS/NewsScraperSearch" />
 	<property name="LOG_ARCHIVE" value="${LOG_PATH}/archive" />
 	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
@@ -17,10 +17,10 @@
 	</appender>
 	<appender name="ROLLING"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>${LOG_PATH}/solr.log</file>
+		<file>${LOG_PATH}/application.log</file>
 		<rollingPolicy
 			class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-			<fileNamePattern>${LOG_PATH}/solr-%d{dd-MM-yyyy}_%d{HH:mm
+			<fileNamePattern>${LOG_PATH}/application-%d{dd-MM-yyyy}_%d{HH:mm
 				,aux}.%i.zip</fileNamePattern>
 			<maxFileSize>100MB</maxFileSize>
 			<!--<maxHistory>60</maxHistory> -->

@@ -1,5 +1,7 @@
 plugins {
 	id 'java'
+	id 'jacoco'
+	id 'com.diffplug.spotless' version '8.10.0'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -35,4 +37,39 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+jacoco {
+	toolVersion = '0.8.14'
+}
+
+tasks.named('jacocoTestCoverageVerification') {
+	violationRules {
+		rule {
+			element = 'BUNDLE'
+			excludes = ['com/news/scraper/NewsScraperApplication*']
+			limit {
+				minimum = 0.90
+			}
+		}
+	}
+}
+
+tasks.named('jacocoTestReport') {
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+tasks.named('check') {
+	dependsOn(tasks.named('jacocoTestCoverageVerification'))
+}
+
+spotless {
+	java {
+		target 'src/**/*.java'
+		googleJavaFormat('1.27.0')
+		formatAnnotations()
+	}
 }
